@@ -31,12 +31,15 @@ public class MusicService extends Service implements
     private final IBinder musicBind = new MusicBinder();
     private String songTitle="";
     private static final int NOTIFY_ID=1;
+    private boolean shuffle=false;
+    private Random rand;
 
     public void onCreate(){
         super.onCreate();
         songPosn = 0;
         player = new MediaPlayer();
         initMusicPlayer();
+        rand=new Random();
     }
 
     public void initMusicPlayer(){
@@ -92,11 +95,15 @@ public class MusicService extends Service implements
 
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
-
+        if(player.getCurrentPosition()>0){
+            mediaPlayer.reset();
+            playNext();
+        }
     }
 
     @Override
     public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+        mediaPlayer.reset();
         return false;
     }
 
@@ -153,13 +160,27 @@ public class MusicService extends Service implements
     }
 
     public void playNext(){
-        songPosn++;
-        if(songPosn>=songs.size()) songPosn=0;
+        if(shuffle){
+            int newSong = songPosn;
+            while(newSong==songPosn){
+                newSong=rand.nextInt(songs.size());
+            }
+            songPosn=newSong;
+        }
+        else{
+            songPosn++;
+            if(songPosn>=songs.size()) songPosn=0;
+        }
         playSong();
     }
 
     @Override
     public void onDestroy() {
         stopForeground(true);
+    }
+
+    public void setShuffle(){
+        if(shuffle) shuffle=false;
+        else shuffle=true;
     }
 }
