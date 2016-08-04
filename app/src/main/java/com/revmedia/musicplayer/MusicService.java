@@ -15,6 +15,9 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.PowerManager;
 import android.util.Log;
+import java.util.Random;
+import android.app.Notification;
+import android.app.PendingIntent;
 
 /**
  * Created by Marvin Zeson on 8/4/2016.
@@ -26,6 +29,8 @@ public class MusicService extends Service implements
     private ArrayList<Song> songs;
     private int songPosn;
     private final IBinder musicBind = new MusicBinder();
+    private String songTitle="";
+    private static final int NOTIFY_ID=1;
 
     public void onCreate(){
         super.onCreate();
@@ -56,6 +61,7 @@ public class MusicService extends Service implements
     public void playSong(){
         player.reset();
         Song playSong = songs.get(songPosn);
+        songTitle=playSong.getTitle();
         long currSong = playSong.getID();
         Uri trackUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -97,6 +103,23 @@ public class MusicService extends Service implements
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
         mediaPlayer.start();
+
+        Intent notIntent = new Intent(this, MainActivity.class);
+        notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendInt = PendingIntent.getActivity(this, 0,
+                notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification.Builder builder = new Notification.Builder(this);
+
+        builder.setContentIntent(pendInt)
+                .setSmallIcon(R.drawable.play)
+                .setTicker(songTitle)
+                .setOngoing(true)
+                .setContentTitle("Playing")
+        .setContentText(songTitle);
+        Notification not = builder.build();
+
+        startForeground(NOTIFY_ID, not);
     }
 
     public int getPosn(){
@@ -133,5 +156,10 @@ public class MusicService extends Service implements
         songPosn++;
         if(songPosn>=songs.size()) songPosn=0;
         playSong();
+    }
+
+    @Override
+    public void onDestroy() {
+        stopForeground(true);
     }
 }
